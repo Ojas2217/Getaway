@@ -1,6 +1,7 @@
 mod config;
 mod services;
 mod structs;
+mod error_handler;
 
 use std::collections::HashMap;
 use serde_json::json;
@@ -25,13 +26,13 @@ use hyper::{Request, Response,Method};
 use hyper_util::rt::TokioIo;
 use tokio::net::TcpListener;
 use hyper_util::rt::TokioExecutor;
-use policy::{Policies,Authorization,RateLimit};
+use policy::{Policies,RateLimit};
 use http_body_util::Empty;
 use tokio::net::TcpStream;
 use tokio::sync::RwLock;
 use crate::services::{authenticate, cache, get_cache, rate_limit_exceeded};
 use crate::structs::App;
-
+use error_handler::*;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
@@ -62,30 +63,23 @@ async fn gateway_handler(
 ) -> Result<Response<Full<Bytes>>, Infallible> {
     let client = Client::builder(TokioExecutor::new()).build_http();
     let start = SystemTime::now();
-    let policies_string = fs::read_to_string("./././policy/src/policies.json").expect("Unable to read policies.json");
-    let policies: Policies = serde_json::from_str(&policies_string).expect("Unable to parse string");
+    let policies_string = match fs::read_to_string("./././policy/src/policies.json"){
+        Ok(s) => s,
+        Err(_) =>  return error(StatusCode::INTERNAL_SERVER_ERROR, "Error reading policies".to_string())
+    };
+    let policies: Policies = match serde_json::from_str(&policies_string) {
+        Ok(p) => p,
+        Err(_) => return error(StatusCode::INTERNAL_SERVER_ERROR,"Error parsing JSON".to_string())
+    };
+
     //auth
     if !authenticate(req.headers(),policies.clone()){
-        let error = json!({
-            "error":"unauthorized"
-        }).to_string();
-        let res = Response::builder().
-            status(StatusCode::UNAUTHORIZED).
-            header(CONTENT_TYPE,"application/json").
-            body::<Full<Bytes>>(Full::from(Bytes::from(error))).unwrap();
-        return Ok(res);
+        return error(StatusCode::UNAUTHORIZED, "Unauthorized".to_string());
     }
 
     //rate limiting
     if rate_limit_exceeded(req.headers(),&state,policies.clone()).await{
-        let error = json!({
-            "error":"rate limit exceeded, try again later"
-        }).to_string();
-        let res = Response::builder().
-            status(StatusCode::TOO_MANY_REQUESTS).
-            header(CONTENT_TYPE,"application/json").
-            body::<Full<Bytes>>(Full::from(Bytes::from(error))).unwrap();
-        return Ok(res);
+        return error(StatusCode::TOO_MANY_REQUESTS,"Rate limit exceeded, try again later".to_string());
     }
 
     //routing
@@ -125,24 +119,10 @@ async fn gateway_handler(
     let backend_res = match timeout(Duration::from_secs(policies.request_timeout), client.request(forward_req)).await{
         Ok(Ok(res)) => res,
         Ok(Err(e))=>{
-            let error = json!({
-            "error":format!("backend error : {}",e).to_string(),
-        }).to_string();
-            let res = Response::builder().
-                status(StatusCode::BAD_GATEWAY).
-                header(CONTENT_TYPE,"application/json").
-                body::<Full<Bytes>>(Full::from(Bytes::from(error))).unwrap();
-            return Ok(res);
+            return error(StatusCode::BAD_GATEWAY,format!("backend error: {}",e).to_string());
         }
         Err(_) =>{
-            let error = json!({
-            "error":"request timed out"
-        }).to_string();
-            let res = Response::builder().
-                status(StatusCode::GATEWAY_TIMEOUT).
-                header(CONTENT_TYPE,"application/json").
-                body::<Full<Bytes>>(Full::from(Bytes::from(error))).unwrap();
-            return Ok(res);
+            return error(StatusCode::GATEWAY_TIMEOUT,"request timed out".to_string());
         }
     };
     let status = backend_res.status();

@@ -6,8 +6,8 @@
     "rate_limit_window" : 60
   },
   "authorization": {
-    "tokens": ["token1","token2"],
-    "users": ["user1","user2"]
+    "token1": "user1",
+    "token2": "token2"
   },
   "cache_duration": 300,
   "request_timeout": 30

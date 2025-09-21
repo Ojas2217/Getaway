@@ -11,11 +11,11 @@ use crate::config;
 use crate::structs::{App, Cached_Entry, RateLimit};
 
 pub fn authenticate(headers: &HeaderMap,policies: Policies ) -> bool{
-    let auth = policies.authorization.tokens;
+    let auth = policies.authorization;
     if let Some(auth_header) = headers.get("Authorization"){
         if let Ok(header_str) = auth_header.to_str(){
             if header_str.starts_with("Bearer "){
-                return auth.contains(&header_str[7..].to_string());
+                return auth.contains_key(&header_str[7..].to_string());
             }
         }
     }
