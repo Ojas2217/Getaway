@@ -1,28 +1,29 @@
 mod lib;
 use axum::{Router, routing::get,routing::put, extract::State, response::Json};
-use serde::{Deserialize, Serialize};
 use std::fs;
-use std::ops::Add;
 use std::sync::Arc;
 use axum::response::IntoResponse;
 use http::StatusCode;
 use tokio::sync::RwLock;
 use lib::*;
-use url::{Url, ParseError};
-
+use url::Url;
+use tower_http::cors::{Any, CorsLayer};
 #[tokio::main]
 pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let router = Router::new();
-    let data = fs::read_to_string("./policies.json")?;
+    //todo make path relative later
+    let data = fs::read_to_string("C:\\Users\\ojasm\\OneDrive\\Desktop\\practice\\getaway\\policy\\policies.json")?;
     let policies: Policies =serde_json::from_str(&data)?;
     let state = Arc::new(RwLock::new(policies));
-
+    //todo allow everything for now, change later
+    let cors = CorsLayer::new().allow_origin(Any).allow_headers(Any).allow_methods(Any);
     let app = router
         .route("/policies",get(get_policies))
         .route("/policies",put(put_policies))
-        .with_state(state);
+        .with_state(state)
+        .layer(cors);
     //todo add request validation for get and put.
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await.unwrap();
     axum::serve(listener, app).await.unwrap();
     Ok(())
 }
