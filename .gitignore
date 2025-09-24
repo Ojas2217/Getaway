@@ -1,3 +1,4 @@
 gateway/target
 policy/target
 /target
+frontend/node_modules
