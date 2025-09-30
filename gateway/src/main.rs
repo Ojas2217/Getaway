@@ -35,7 +35,7 @@ use crate::structs::App;
 use error_handler::*;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
     let listener = TcpListener::bind(addr).await?;
     let state = Arc::new(RwLock::new(App {
         rates: HashMap::new(),cache: HashMap::new()
@@ -63,7 +63,8 @@ async fn gateway_handler(
 ) -> Result<Response<Full<Bytes>>, Infallible> {
     let client = Client::builder(TokioExecutor::new()).build_http();
     let start = SystemTime::now();
-    let policies_string = match fs::read_to_string("./././policy/src/policies.json"){
+    //todo make relative later
+    let policies_string = match fs::read_to_string("C:\\Users\\ojasm\\OneDrive\\Desktop\\practice\\getaway\\policy\\policies.json"){
         Ok(s) => s,
         Err(_) =>  return error(StatusCode::INTERNAL_SERVER_ERROR, "Error reading policies".to_string())
     };

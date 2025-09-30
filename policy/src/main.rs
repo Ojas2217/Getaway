@@ -42,7 +42,8 @@ async fn put_policies(
 
     if Url::parse(policies.backend.as_str()).is_err() {
         return (StatusCode::BAD_REQUEST, Json(serde_json::json!({
-            "error": "Invalid backend URL"
+            "error": "Invalid backend URL",
+            "old":old_policies
         })));
     }
     if let Err(_) = fs::write("./policies.json",serde_json::to_string(&*policies).unwrap()) {
