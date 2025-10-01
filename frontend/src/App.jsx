@@ -10,6 +10,7 @@ function App() {
   const [timeout, setTimeout] = useState(0)
   const [rateRequests, setRateRequests] = useState(0)
   const [rateWindow, setRateWindow] = useState(0)
+   const [authMap, setAuthMap] = useState({});
 
   useEffect(() => {
     fetch("http://127.0.0.1:3000/policies")
@@ -17,7 +18,7 @@ function App() {
       .then(res => setPolicies(res))
       .catch(e => console.log("Policy engine is down : " + e));
   }, []);
-  console.log(backend)
+  console.log(policies)
 
   async function handleUpdate() {
     if (!backend) {
@@ -31,10 +32,7 @@ function App() {
         "rate_limit_requests": rateRequests,
         "rate_limit_window": rateWindow
       },
-      "authorization": {
-        "token1": "user1",
-        "token2": "token2"
-      },
+      "authorization": authMap,
       "cache_duration": cachedur,
       "request_timeout": timeout
     }
@@ -60,32 +58,56 @@ function App() {
 
     }
   }
+  const add = () => {
+    setAuthMap({ ...authMap, "": ""});
+  };
+
+  
+  const remove = (token) => {
+    const updated = { ...authMap };
+    delete updated[token];
+    setAuthMap(updated);
+  };
+
+  const update = (oldToken, newToken, newUser) => {
+    const updated = { ...authMap };
+    delete updated[oldToken]; 
+    if (newToken) {
+      updated[newToken] = newUser; 
+    }
+    setAuthMap(updated);
+  };
   return (
-    
+
     <div className=' text-[#693f39] '>
 
-      <Header />
-      <div className="  flex flex-col items-start justify-between border-gray-500 border-b pt-6 pb-6 pl-8 pr-8 space-y-10">
+      <div className="  flex flex-col items-start justify-between border-gray-500 border-b p-6 space-y-10">
         <h1>Backend</h1>
-        <input className=' bg-[#c2241241] border-none outline-0 rounded-md w-56 p-1.5' onKeyDown={e => { if (e.key == "Enter") setBackend("https://" + e.target.value) }} type="text" placeholder='backend URL'></input>
-        <input className=' bg-[#c2241241] border-none outline-0 rounded-md w-56 p-1.5' onKeyDown={e => { if (e.key == "Enter") setPrefix(e.target.value) }} type="text" placeholder='prefix (blank if none)'></input>
+        <input className=' bg-[#c2241241] border-none outline-0 rounded-md w-56 p-1.5' onChange={e => setBackend(e.target.value) } type="text" placeholder='backend URL' value={backend}></input>
+        <input className=' bg-[#c2241241] border-none outline-0 rounded-md w-56 p-1.5' onChange={e =>setPrefix(e.target.value) } type="text" placeholder='prefix (blank if none)' value={prefix}></input>
       </div>
-      <div className="  flex flex-col items-start justify-between border-gray-500 border-b pt-6 pb-6 pl-8 pr-8 space-y-10">
+      <div className="  flex flex-col items-start justify-between border-gray-500 border-b p-6 space-y-10">
         <h1>Authorization</h1>
-        <h3>todo</h3>
+        {Object.entries(authMap).map(([token, user], index) => (
+        <div key={index} className=' flex space-x-7'>
+          <input className=' bg-[#c2241241] border-none outline-0 rounded-md w-56 p-1.5' type="text"placeholder="token (unique)"value={token} onChange={e =>update(token, e.target.value, user)}/>
+          <input className=' bg-[#c2241241] border-none outline-0 rounded-md w-56 p-1.5' type="text" placeholder="user" value={user} onChange={e => update(token, token, e.target.value)}/>
+          <button className=' bg-[#ff1900b8] border-none outline-0 rounded-md w-40 p-1.5' onClick={() => remove(token)}>Remove</button>
+        </div>
+      ))}
+      <button className=' bg-[#ff1900b8] border-none outline-0 rounded-md w-40 p-1.5' onClick={add}>Add User</button>
       </div>
-      <div className="  flex flex-col items-start justify-between border-gray-500 border-b pt-6 pb-6 pl-8 pr-8 space-y-10">
+      <div className="  flex flex-col items-start justify-between border-gray-500 border-b p-6 space-y-10">
         <h1>Cache</h1>
-        <input className=' bg-[#c2241241] border-none outline-0 rounded-md w-56 p-1.5' onKeyDown={e => { if (e.key == "Enter") setCachedur(e.target.value) }} type="number" placeholder='cache duration (seconds)'></input>
+        <input className=' bg-[#c2241241] border-none outline-0 rounded-md w-56 p-1.5' onChange={e => setCachedur(e.target.value) } type="number" placeholder='cache duration (seconds)'></input>
       </div>
 
-      <div className="  flex flex-col items-start justify-between  pt-6 pb-6 pl-8 pr-8 space-y-10">
+      <div className="  flex flex-col items-start justify-between  p-6 space-y-10">
         <h1>Timeout & Rate Limit</h1>
-        <input className=' bg-[#c2241241] border-none outline-0  rounded-md w-56 p-1.5' onKeyDown={e => { if (e.key == "Enter") setTimeout(e.target.value) }} type="number" placeholder='timeout duration (seconds)'></input>
-        <input className=' bg-[#c2241241] border-none outline-0 rounded-md w-56 p-1.5' onKeyDown={e => { if (e.key == "Enter") setRateRequests(e.target.value) }} type="number" placeholder='rate limit after X requests'></input>
-        <input className=' bg-[#c2241241] border-none outline-0  rounded-md w-56 p-1.5' onKeyDown={e => { if (e.key == "Enter") setRateWindow(e.target.value) }} type="number " placeholder='rate limit window'></input>
+        <input className=' bg-[#c2241241] border-none outline-0  rounded-md w-56 p-1.5' onChange={e =>  setTimeout(e.target.value) } type="number" placeholder='timeout duration (seconds)'></input>
+        <input className=' bg-[#c2241241] border-none outline-0 rounded-md w-56 p-1.5' onChange={e => setRateRequests(e.target.value) } type="number" placeholder='rate limit after X requests'></input>
+        <input className=' bg-[#c2241241] border-none outline-0  rounded-md w-56 p-1.5' onChange={e => setRateWindow(e.target.value) } type="number " placeholder='rate limit window'></input>
       </div>
-      <Footer/>
     </div>
   )
 }
