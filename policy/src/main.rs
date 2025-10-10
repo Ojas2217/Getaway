@@ -1,6 +1,7 @@
 mod lib;
-use axum::{Router, routing::get,routing::put, extract::State, response::Json};
+use axum::{Router, routing::get,routing::put,routing::options, extract::State, response::Json};
 use std::fs;
+use std::fs::OpenOptions;
 use std::sync::Arc;
 use axum::response::IntoResponse;
 use http::StatusCode;
@@ -8,18 +9,29 @@ use tokio::sync::RwLock;
 use lib::*;
 use url::Url;
 use tower_http::cors::{Any, CorsLayer};
+use http::header::{CONTENT_TYPE};
+use http::Method;
+use std::env;
+use std::error::Error;
+use std::fs::File;
+use std::io::Write;
+use std::process::exit;
+use std::time::{SystemTime};
+use chrono::Local;
 #[tokio::main]
 pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let router = Router::new();
-    //todo make path relative later
-    let data = fs::read_to_string("C:\\Users\\ojasm\\OneDrive\\Desktop\\practice\\getaway\\policy\\policies.json")?;
+    let data = fs::read_to_string("./policies.json")?;
     let policies: Policies =serde_json::from_str(&data)?;
     let state = Arc::new(RwLock::new(policies));
-    //todo allow everything for now, change later
-    let cors = CorsLayer::new().allow_origin(Any).allow_headers(Any).allow_methods(Any);
+    let cors = CorsLayer::new()
+   .allow_methods([Method::GET, Method::PUT])
+   .allow_origin(Any)
+   .allow_headers([CONTENT_TYPE]);
     let app = router
         .route("/policies",get(get_policies))
         .route("/policies",put(put_policies))
+        .route("/logs",get(get_logs))
         .with_state(state)
         .layer(cors);
     //todo add request validation for get and put.
@@ -30,6 +42,10 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
 async fn get_policies(state: State<Arc<RwLock<Policies>>>)->Json<Policies>{
     let policies = state.read().await.clone();
     Json(policies)
+}
+async fn get_logs()->impl IntoResponse{
+    let data = fs::read_to_string("./logs.txt").unwrap_or("No logs found".to_string());
+    (StatusCode::OK,Json(serde_json::json!({"logs":data})))
 }
 
 async fn put_policies(
@@ -53,18 +69,20 @@ async fn put_policies(
     (StatusCode::OK, Json(serde_json::to_value(new_policies).unwrap()))
 }
 fn log(old: Policies,new: Policies){
+    let mut logfile = OpenOptions::new().read(true).append(true).create(true).open("./logs.txt").expect("Unable to open log file");
     let mut result = String::new();
-    if old.backend!=new.backend{result.push_str(format!("backend changed {} ->{}\n",old.backend,new.backend).as_str());};
-    if old.cache_duration!=new.cache_duration { result.push_str(format!("cache duration changed {} -> {}\n",old.cache_duration,new.cache_duration).as_str()); }
-    if old.path_prefix != new.path_prefix {result.push_str(format!("path prefix changed {} -> {}\n",old.path_prefix,new.path_prefix).as_str());}
-    if old.request_timeout != new.request_timeout{result.push_str(format!("timeout seconds changed {} -> {}\n",old.request_timeout,new.request_timeout).as_str()); }
-    if old.rate_limit.rate_limit_window != new.rate_limit.rate_limit_window{ result.push_str(format!("rate limit window size changed {} -> {}\n",old.rate_limit.rate_limit_window,new.rate_limit.rate_limit_window).as_str()); }
-    if old.rate_limit.rate_limit_requests != new.rate_limit.rate_limit_requests{ result.push_str(format!("rate limit request changed {} -> {}\n",old.rate_limit.rate_limit_requests,new.rate_limit.rate_limit_requests).as_str()); }
-    if old.authorization!=new.authorization{ result.push_str(format!("authorization tokens changed {:?} -> {:?}\n",old.authorization,new.authorization).as_str()); }
+    if old.backend!=new.backend{result.push_str(format!("[{}]: backend changed {} ->{}\n",Local::now().format("%Y-%m-%d %H:%M:%S"),old.backend,new.backend).as_str());};
+    if old.cache_duration!=new.cache_duration { result.push_str(format!("[{}]: cache duration changed {} -> {}\n",Local::now().format("%Y-%m-%d %H:%M:%S"),old.cache_duration,new.cache_duration).as_str()); }
+    if old.path_prefix != new.path_prefix {result.push_str(format!("[{}]: path prefix changed {} -> {}\n",Local::now().format("%Y-%m-%d %H:%M:%S"),old.path_prefix,new.path_prefix).as_str());}
+    if old.request_timeout != new.request_timeout{result.push_str(format!("[{}]: timeout seconds changed {} -> {}\n",Local::now().format("%Y-%m-%d %H:%M:%S"),old.request_timeout,new.request_timeout).as_str()); }
+    if old.rate_limit.rate_limit_window != new.rate_limit.rate_limit_window{ result.push_str(format!("[{}]: rate limit window size changed {} -> {}\n",Local::now().format("%Y-%m-%d %H:%M:%S"),old.rate_limit.rate_limit_window,new.rate_limit.rate_limit_window).as_str()); }
+    if old.rate_limit.rate_limit_requests != new.rate_limit.rate_limit_requests{ result.push_str(format!("[{}]: rate limit request changed {} -> {}\n",Local::now().format("%Y-%m-%d %H:%M:%S"),old.rate_limit.rate_limit_requests,new.rate_limit.rate_limit_requests).as_str()); }
+    if old.authorization!=new.authorization{ result.push_str(format!("[{}]: authorization tokens changed {:?} -> {:?}\n",Local::now().format("%Y-%m-%d %H:%M:%S"),old.authorization,new.authorization).as_str()); }
     if result.is_empty(){
-        println!("No changes made to policies!")
+        writeln!(&mut logfile, "No changes made to policies!\n").expect("Unable to write to log file");
     } else{
-        println!("{}",result);
+        writeln!(&mut logfile,"{}", result.as_str()).expect("Unable to write to log file");
+
     }
 
 }

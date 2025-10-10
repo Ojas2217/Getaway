@@ -39,17 +39,13 @@ h1 {
 
 button {
   border-radius: 8px;
-  border: 1px solid transparent;
   font-family: inherit;
   cursor: pointer;
   transition: border-color 0.25s;
+  color:black;
 }
 button:hover {
-  border-color: #000000;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  transition:0.3s;
 }
 
 @media (prefers-color-scheme: light) {
