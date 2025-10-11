@@ -3,6 +3,13 @@ mod services;
 mod structs;
 mod error_handler;
 
+use std::env;
+use std::error::Error;
+use std::fs::File;
+use std::io::Write;
+use std::process::exit;
+use std::time::{SystemTime};
+use chrono::Local;
 use std::collections::HashMap;
 use serde_json::json;
 use std::convert::Infallible;
@@ -23,6 +30,7 @@ use http_body_util::BodyExt;
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
 use hyper::{Request, Response,Method};
+use hyper::header::{HeaderName, HeaderValue};
 use hyper_util::rt::TokioIo;
 use tokio::net::TcpListener;
 use hyper_util::rt::TokioExecutor;
@@ -64,7 +72,7 @@ async fn gateway_handler(
     let client = Client::builder(TokioExecutor::new()).build_http();
     let start = SystemTime::now();
     //todo make relative later
-    let policies_string = match fs::read_to_string("C:\\Users\\ojasm\\OneDrive\\Desktop\\practice\\getaway\\policy\\policies.json"){
+    let policies_string = match fs::read_to_string("././policy/policies.json") {
         Ok(s) => s,
         Err(_) =>  return error(StatusCode::INTERNAL_SERVER_ERROR, "Error reading policies".to_string())
     };
@@ -133,7 +141,18 @@ async fn gateway_handler(
     for (key, value) in headers.iter() {
         response = response.header(key, value);
     }
-
+    headers.insert(
+        HeaderName::from_static("access-control-allow-origin"),
+        HeaderValue::from_static("*"),
+    );
+    headers.insert(
+        HeaderName::from_static("access-control-allow-methods"),
+        HeaderValue::from_static("GET, POST, PUT, DELETE, PATCH, OPTIONS"),
+    );
+    headers.insert(
+        HeaderName::from_static("access-control-allow-headers"),
+        HeaderValue::from_static("Content-Type, Authorization"),
+    );
     let collected_res = backend_res.into_body().collect().await.unwrap();
     let res_body_bytes = collected_res.to_bytes();
 
@@ -142,15 +161,16 @@ async fn gateway_handler(
     if method == Method::GET{
         cache(state,uri.to_string(),(res.status(), res_body_bytes),policies.clone()).await;
     }
-
-    println!(
-        "{} {} {} {}ms",
+    let mut logfile = OpenOptions::new().read(true).append(true).create(true).open("././policy/logs.txt").expect("Unable to open log file");
+    let toLog = format!(
+        "Gateway @ [{}]: {} {} {} {}ms",
+        Local::now().format("%Y-%m-%d %H:%M:%S"),
         method,
         uri,
         res.status(),
         SystemTime::now().duration_since(start).unwrap().as_millis()
 
     );
-
+    writeln!(&mut logfile,"{}", toLog.as_str()).expect("Unable to write to log file");
     Ok(res)
 }

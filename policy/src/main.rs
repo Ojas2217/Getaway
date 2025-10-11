@@ -54,32 +54,33 @@ async fn put_policies(
 )-> impl IntoResponse {
     let old_policies = state.read().await.clone();
     let mut policies = state.write().await;
-    *policies = new_policies.clone();
+    
 
-    if Url::parse(policies.backend.as_str()).is_err() {
+    if Url::parse(new_policies.backend.as_str()).is_err() {
         return (StatusCode::BAD_REQUEST, Json(serde_json::json!({
             "error": "Invalid backend URL",
             "old":old_policies
         })));
     }
-    if let Err(_) = fs::write("./policies.json",serde_json::to_string(&*policies).unwrap()) {
+    if let Err(_) = fs::write("./policies.json",serde_json::to_string(&new_policies).unwrap()) {
         return (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({"error":"Error Writing Policies"})))
     }
+    *policies = new_policies.clone();
     log(old_policies,new_policies.clone());
     (StatusCode::OK, Json(serde_json::to_value(new_policies).unwrap()))
 }
 fn log(old: Policies,new: Policies){
     let mut logfile = OpenOptions::new().read(true).append(true).create(true).open("./logs.txt").expect("Unable to open log file");
     let mut result = String::new();
-    if old.backend!=new.backend{result.push_str(format!("[{}]: backend changed {} ->{}\n",Local::now().format("%Y-%m-%d %H:%M:%S"),old.backend,new.backend).as_str());};
-    if old.cache_duration!=new.cache_duration { result.push_str(format!("[{}]: cache duration changed {} -> {}\n",Local::now().format("%Y-%m-%d %H:%M:%S"),old.cache_duration,new.cache_duration).as_str()); }
-    if old.path_prefix != new.path_prefix {result.push_str(format!("[{}]: path prefix changed {} -> {}\n",Local::now().format("%Y-%m-%d %H:%M:%S"),old.path_prefix,new.path_prefix).as_str());}
-    if old.request_timeout != new.request_timeout{result.push_str(format!("[{}]: timeout seconds changed {} -> {}\n",Local::now().format("%Y-%m-%d %H:%M:%S"),old.request_timeout,new.request_timeout).as_str()); }
-    if old.rate_limit.rate_limit_window != new.rate_limit.rate_limit_window{ result.push_str(format!("[{}]: rate limit window size changed {} -> {}\n",Local::now().format("%Y-%m-%d %H:%M:%S"),old.rate_limit.rate_limit_window,new.rate_limit.rate_limit_window).as_str()); }
-    if old.rate_limit.rate_limit_requests != new.rate_limit.rate_limit_requests{ result.push_str(format!("[{}]: rate limit request changed {} -> {}\n",Local::now().format("%Y-%m-%d %H:%M:%S"),old.rate_limit.rate_limit_requests,new.rate_limit.rate_limit_requests).as_str()); }
-    if old.authorization!=new.authorization{ result.push_str(format!("[{}]: authorization tokens changed {:?} -> {:?}\n",Local::now().format("%Y-%m-%d %H:%M:%S"),old.authorization,new.authorization).as_str()); }
+    if old.backend!=new.backend{result.push_str(format!("Policies @ [{}]: backend changed {} ->{}\n",Local::now().format("%Y-%m-%d %H:%M:%S"),old.backend,new.backend).as_str());};
+    if old.cache_duration!=new.cache_duration { result.push_str(format!("Policies @ [{}]: cache duration changed {} -> {}\n",Local::now().format("%Y-%m-%d %H:%M:%S"),old.cache_duration,new.cache_duration).as_str()); }
+    if old.path_prefix != new.path_prefix {result.push_str(format!("Policies @ [{}]: path prefix changed {} -> {}\n",Local::now().format("%Y-%m-%d %H:%M:%S"),old.path_prefix,new.path_prefix).as_str());}
+    if old.request_timeout != new.request_timeout{result.push_str(format!("Policies @ [{}]: timeout seconds changed {} -> {}\n",Local::now().format("%Y-%m-%d %H:%M:%S"),old.request_timeout,new.request_timeout).as_str()); }
+    if old.rate_limit.rate_limit_window != new.rate_limit.rate_limit_window{ result.push_str(format!("Policies @ [{}]: rate limit window size changed {} -> {}\n",Local::now().format("%Y-%m-%d %H:%M:%S"),old.rate_limit.rate_limit_window,new.rate_limit.rate_limit_window).as_str()); }
+    if old.rate_limit.rate_limit_requests != new.rate_limit.rate_limit_requests{ result.push_str(format!("Policies @ [{}]: rate limit request changed {} -> {}\n",Local::now().format("%Y-%m-%d %H:%M:%S"),old.rate_limit.rate_limit_requests,new.rate_limit.rate_limit_requests).as_str()); }
+    if old.authorization!=new.authorization{ result.push_str(format!("Policies @ [{}]: authorization tokens changed {:?} -> {:?}\n",Local::now().format("%Y-%m-%d %H:%M:%S"),old.authorization,new.authorization).as_str()); }
     if result.is_empty(){
-        writeln!(&mut logfile, "No changes made to policies!\n").expect("Unable to write to log file");
+        writeln!(&mut logfile,"{}", format!("Policies @ [{}]: No changes made to policies!\n",Local::now().format("%Y-%m-%d %H:%M:%S"))).expect("Unable to write to log file");
     } else{
         writeln!(&mut logfile,"{}", result.as_str()).expect("Unable to write to log file");
 

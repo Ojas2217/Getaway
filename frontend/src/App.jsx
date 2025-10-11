@@ -11,6 +11,8 @@ function App() {
   const [rateRequests, setRateRequests] = useState(0)
   const [rateWindow, setRateWindow] = useState(0)
   const [authMap, setAuthMap] = useState({});
+  const [upToDate, setUpToDate] = useState(2); //0=not updated,1=loading,2=updated
+  
 
   useEffect(() => {
     fetch("http://127.0.0.1:3000/policies")
@@ -58,6 +60,7 @@ function App() {
 
 
   async function updatePolicies(new_policies) {
+    setUpToDate(1)
     const res = await fetch("http://127.0.0.1:3000/policies", {
       method: "PUT",
       headers: { "content-type": "application/json" },
@@ -68,11 +71,16 @@ function App() {
       const err = await res.json();
       alert("Error " + err.error);
       setPolicies(err.old);
+      setUpToDate(2)
       return;
     }
 
     let p = await res.json();
     setPolicies(p)
+
+    setTimeout(() => {
+      setUpToDate(2)
+    }, 500);
 
   }
   const add = () => {
@@ -93,7 +101,16 @@ function App() {
       updated[newToken] = newUser;
     }
     setAuthMap(updated);
+    checkUpd(JSON.stringify(policies.authorization),JSON.stringify(updated))
   };
+  const checkUpd = (oldVal,newVal) =>{
+    console.log(oldVal,newVal)
+    if(oldVal!==newVal){
+      setUpToDate(0)
+    }else{
+      setUpToDate(2)
+    }
+  }
   return (
 
     <div className=' text-[#693f39] '>
@@ -101,17 +118,20 @@ function App() {
       <div className="  flex flex-col items-start justify-between border-gray-500 border-b p-6 space-y-10">
         <div className=' flex flex-row justify-between w-full'>
         <h1>Backend</h1>
-        <button className=' bg-[#ff1900b8] border-none opacity-80 hover:opacity-100 hover:scale-110 outline-0 rounded-md w-40 p-1.5 text-xl ' onClick={handleUpdate}>Update Policies</button>   
+        <div className=' flex flex-row space-x-5 items-center'>
+         <h2>{upToDate==2?"All Policies are Up to Date":(upToDate==0?"Unsaved changes":"Updating..")}</h2> 
+        <button className={`${upToDate==2?"bg-[#00ff1eb8]":(upToDate==1?"bg-[#6c6262]":"bg-[#ff1900b8]")} size-12 border-none opacity-80 hover:opacity-100 hover:scale-110 outline-0 rounded-md w-40 p-1.5 text-xl`} onClick={handleUpdate}>Update Policies</button>   
         </div>
-        <input className=' bg-[#c2241241] border-none outline-0 rounded-md w-56 p-1.5' onChange={e => setBackend(e.target.value)} type="text" placeholder='backend URL' value={backend}></input>
-        <input className=' bg-[#c2241241] border-none outline-0 rounded-md w-56 p-1.5' onChange={e => setPrefix(e.target.value)} type="text" placeholder='prefix (blank if none)' value={prefix}></input>
+        </div>
+        <input className=' bg-[#c2241241] border-none outline-0 rounded-md w-56 p-1.5' onChange={e =>{checkUpd(policies.backend,e.target.value);setBackend(e.target.value)}} type="text" placeholder='backend URL' value={backend}></input>
+        <input className=' bg-[#c2241241] border-none outline-0 rounded-md w-56 p-1.5' onChange={e => {checkUpd(policies.path_prefix,e.target.value);setPrefix(e.target.value)}} type="text" placeholder='prefix (blank if none)' value={prefix}></input>
       </div>
       <div className="  flex flex-col items-start justify-between border-gray-500 border-b p-6 space-y-10">
         <h1>Authorization</h1>
         {Object.entries(authMap).map(([token, user], index) => (
           <div key={index} className=' flex space-x-7'>
-            <input className=' bg-[#c2241241] border-none outline-0 rounded-md w-56 p-1.5' type="text" placeholder="token (unique)" value={token} onChange={e => update(token, e.target.value, user)} />
-            <input className=' bg-[#c2241241] border-none outline-0 rounded-md w-56 p-1.5' type="text" placeholder="user" value={user} onChange={e => update(token, token, e.target.value)} />
+            <input className=' bg-[#c2241241] border-none outline-0 rounded-md w-56 p-1.5' type="text" placeholder="token (unique)" value={token} onChange={e =>{update(token, e.target.value, user);}} />
+            <input className=' bg-[#c2241241] border-none outline-0 rounded-md w-56 p-1.5' type="text" placeholder="user" value={user} onChange={e =>{update(token, token, e.target.value);}} />
             <button className=' bg-[#ff1900b8] border-none opacity-80 hover:opacity-100 hover:scale-110 outline-0 rounded-md w-40 p-1.5' onClick={() => remove(token)}>Remove</button>
           </div>
         ))}
@@ -119,14 +139,14 @@ function App() {
       </div>
       <div className="  flex flex-col items-start justify-between border-gray-500 border-b p-6 space-y-10">
         <h1>Cache</h1>
-        <input className=' bg-[#c2241241] border-none outline-0 rounded-md w-56 p-1.5' onChange={e =>{ if(/^[0-9]*$/.test(e.target.value)) setCachedur(Number(e.target.value))}} type="text" value={cachedur} placeholder='cache duration (seconds)'></input>
+        <input className=' bg-[#c2241241] border-none outline-0 rounded-md w-56 p-1.5' onChange={e =>{ if(/^[0-9]*$/.test(e.target.value))checkUpd(policies.cache_duration,e.target.value); setCachedur(Number(e.target.value))}} type="text" value={cachedur} placeholder='cache duration (seconds)'></input>
       </div>
 
       <div className="  flex flex-col items-start justify-between  p-6 space-y-10">
         <h1>Timeout & Rate Limit</h1>
-        <input className=' bg-[#c2241241] border-none outline-0  rounded-md w-56 p-1.5' onChange={e =>{ if(/^[0-9]*$/.test(e.target.value)) setReqTimeout(Number(e.target.value))}} type="text"  value={reqTimeout} placeholder='timeout duration (seconds)'></input>
-        <input className=' bg-[#c2241241] border-none outline-0 rounded-md w-56 p-1.5' onChange={e =>{ if(/^[0-9]*$/.test(e.target.value)) setRateRequests(Number(e.target.value))}} type="text" value={rateRequests} placeholder='rate limit after X requests'></input>
-        <input className=' bg-[#c2241241] border-none outline-0  rounded-md w-56 p-1.5' onChange={e =>{ if(/^[0-9]*$/.test(e.target.value))setRateWindow(Number(e.target.value))}} type="text " value={rateWindow} placeholder='rate limit window'></input>
+        <input className=' bg-[#c2241241] border-none outline-0  rounded-md w-56 p-1.5' onChange={e =>{ if(/^[0-9]*$/.test(e.target.value))checkUpd(policies.request_timeout,e.target.value); setReqTimeout(Number(e.target.value))}} type="text"  value={reqTimeout} placeholder='timeout duration (seconds)'></input>
+        <input className=' bg-[#c2241241] border-none outline-0 rounded-md w-56 p-1.5' onChange={e =>{ if(/^[0-9]*$/.test(e.target.value))checkUpd(policies.rate_limit.rate_limit_requests,e.target.value); setRateRequests(Number(e.target.value))}} type="text" value={rateRequests} placeholder='rate limit after X requests'></input>
+        <input className=' bg-[#c2241241] border-none outline-0  rounded-md w-56 p-1.5' onChange={e =>{ if(/^[0-9]*$/.test(e.target.value))checkUpd(policies.rate_limit.rate_limit_window,e.target.value);setRateWindow(Number(e.target.value))}} type="text " value={rateWindow} placeholder='rate limit window'></input>
       </div>
     </div>
   )
