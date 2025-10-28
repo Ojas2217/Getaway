@@ -13,9 +13,9 @@ function App() {
   const [authMap, setAuthMap] = useState(new Map());
   const [upToDate, setUpToDate] = useState(2); //0=not updated,1=loading,2=updated
 
-
+  console.log(import.meta.env.VITE_POLICY_ADDR)
   useEffect(() => {
-    fetch("http://127.0.0.1:3000/policies")
+    fetch(`http://${import.meta.env.VITE_POLICY_ADDR}/policies`)
       .then(res => res.json())
       .then(res => setPolicies(res))
       .catch(e => console.log("Policy engine is down : " + e));
@@ -60,7 +60,7 @@ function App() {
 
   async function updatePolicies(new_policies) {
     setUpToDate(1)
-    const res = await fetch("http://127.0.0.1:3000/policies", {
+    const res = await fetch(`http://${import.meta.env.VITE_POLICY_ADDR}/policies`, {
       method: "PUT",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(new_policies)

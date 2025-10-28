@@ -3,3 +3,4 @@ members = [
     "gateway",
     "policy"
 ]
+resolver = "3"

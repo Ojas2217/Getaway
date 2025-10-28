@@ -18,8 +18,13 @@ use std::io::Write;
 use std::process::exit;
 use std::time::{SystemTime};
 use chrono::Local;
+use dotenvy::dotenv;
 #[tokio::main]
 pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    dotenv().ok();
+    println!("{}",env::var("POLICY_ADDR").as_deref().unwrap_or("No POLICY_ADDR set"));
+    let policy_addr = env::var("POLICY_ADDR").unwrap_or("127.0.0.1:3000".to_string());
+    
     let router = Router::new();
     let data = fs::read_to_string("./policies.json")?;
     let policies: Policies =serde_json::from_str(&data)?;
@@ -35,7 +40,7 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_state(state)
         .layer(cors);
     //todo add request validation for get and put.
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await.unwrap();
+    let listener = tokio::net::TcpListener::bind(&policy_addr).await.expect("Invalid policy address");
     axum::serve(listener, app).await.unwrap();
     Ok(())
 }

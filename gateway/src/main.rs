@@ -4,11 +4,9 @@ mod structs;
 mod error_handler;
 
 use std::env;
-use std::error::Error;
 use std::fs::File;
 use std::io::Write;
 use std::process::exit;
-use std::time::{SystemTime};
 use chrono::Local;
 use std::collections::HashMap;
 use serde_json::json;
@@ -30,7 +28,7 @@ use http_body_util::BodyExt;
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
 use hyper::{Request, Response,Method};
-use hyper::header::{HeaderName, HeaderValue};
+use hyper::header::{HeaderName, HeaderValue, HeaderMap};
 use hyper_util::rt::TokioIo;
 use tokio::net::TcpListener;
 use hyper_util::rt::TokioExecutor;
@@ -41,10 +39,14 @@ use tokio::sync::RwLock;
 use crate::services::{authenticate, cache, get_cache, rate_limit_exceeded};
 use crate::structs::App;
 use error_handler::*;
+use dotenvy::dotenv;
+use crate::fs::OpenOptions;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
-    let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
-    let listener = TcpListener::bind(addr).await?;
+    dotenv().ok();
+    let gateway_addr = env::var("GATEWAY_ADDR").unwrap_or("127.0.0.1:8080".to_string());
+
+    let listener = TcpListener::bind(&gateway_addr).await.expect("Invalid gateway address");
     let state = Arc::new(RwLock::new(App {
         rates: HashMap::new(),cache: HashMap::new()
     }));
@@ -125,7 +127,7 @@ async fn gateway_handler(
         .body(Full::from(body_bytes)).unwrap();
 
 
-    let backend_res = match timeout(Duration::from_secs(policies.request_timeout), client.request(forward_req)).await{
+    let mut backend_res = match timeout(Duration::from_secs(policies.request_timeout), client.request(forward_req)).await{
         Ok(Ok(res)) => res,
         Ok(Err(e))=>{
             return error(StatusCode::BAD_GATEWAY,format!("backend error: {}",e).to_string());
@@ -135,12 +137,10 @@ async fn gateway_handler(
         }
     };
     let status = backend_res.status();
-    let headers = backend_res.headers();
+    let mut headers=backend_res.headers_mut();
 
     let mut response = Response::builder().status(status);
-    for (key, value) in headers.iter() {
-        response = response.header(key, value);
-    }
+
     headers.insert(
         HeaderName::from_static("access-control-allow-origin"),
         HeaderValue::from_static("*"),
@@ -153,6 +153,9 @@ async fn gateway_handler(
         HeaderName::from_static("access-control-allow-headers"),
         HeaderValue::from_static("Content-Type, Authorization"),
     );
+    for (key, value) in headers.clone().iter() {
+        response = response.header(key, value);
+    }
     let collected_res = backend_res.into_body().collect().await.unwrap();
     let res_body_bytes = collected_res.to_bytes();
 
