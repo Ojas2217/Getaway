@@ -59,8 +59,8 @@ function Start-ServiceWindow($title, $workingDir, $command,$address) {
     Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd `"$workingDir`"; $command" -WindowStyle Normal
 }
 
-Start-Process cargo -ArgumentList "build" -WorkingDirectory $gatewayDir -WindowStyle Hidden -NoNewWindow -Wait
-Start-Process cargo -ArgumentList "build" -WorkingDirectory $policyDir -WindowStyle Hidden -NoNewWindow -Wait
+Start-Process cargo -ArgumentList "build" -WorkingDirectory $gatewayDir  -NoNewWindow -Wait
+Start-Process cargo -ArgumentList "build" -WorkingDirectory $policyDir  -NoNewWindow -Wait
 
 
 Start-ServiceWindow "Gateway" $gatewayDir "cargo run" "http://$env:GATEWAY_ADDR"
