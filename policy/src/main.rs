@@ -39,7 +39,6 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/logs",get(get_logs))
         .with_state(state)
         .layer(cors);
-    //todo add request validation for get and put.
     let listener = tokio::net::TcpListener::bind(&policy_addr).await.expect("Invalid policy address");
     axum::serve(listener, app).await.unwrap();
     Ok(())

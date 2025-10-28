@@ -73,7 +73,6 @@ async fn gateway_handler(
 ) -> Result<Response<Full<Bytes>>, Infallible> {
     let client = Client::builder(TokioExecutor::new()).build_http();
     let start = SystemTime::now();
-    //todo make relative later
     let policies_string = match fs::read_to_string("././policy/policies.json") {
         Ok(s) => s,
         Err(_) =>  return error(StatusCode::INTERNAL_SERVER_ERROR, "Error reading policies".to_string())
