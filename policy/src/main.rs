@@ -22,7 +22,6 @@ use dotenvy::dotenv;
 #[tokio::main]
 pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
-    println!("{}",env::var("POLICY_ADDR").as_deref().unwrap_or("No POLICY_ADDR set"));
     let policy_addr = env::var("POLICY_ADDR").unwrap_or("127.0.0.1:3000".to_string());
     
     let router = Router::new();

@@ -1,1 +1,1 @@
-{"backend":"https://backend.com","path_prefix":"/api","rate_limit":{"rate_limit_requests":55,"rate_limit_window":100},"authorization":{"":"","4554543":"","12133":""},"cache_duration":25,"request_timeout":20}
+{"backend":"https://backend.com","path_prefix":"/api","rate_limit":{"rate_limit_requests":55,"rate_limit_window":100},"authorization":{"12345678":"ABCDEFGH"},"cache_duration":25,"request_timeout":20}
