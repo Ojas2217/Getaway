@@ -3,7 +3,7 @@ import { useState } from 'react';
 export default function Logs() {
     const [logs, setLogs] = React.useState("");
     useEffect(() => {
-        fetch("http://127.0.0.1:3000/logs")
+        fetch(`http://${import.meta.env.VITE_POLICY_ADDR}/logs`)
             .then(res => res.json())
             .then(res =>{
                 if (res.logs) {

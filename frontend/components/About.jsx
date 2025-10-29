@@ -19,9 +19,8 @@ export default function About() {
                 3. The Dashboard, which is where you are now! Here you can integrate the gateway with your project<br></br> 
                 &emsp; to view and edit existing policies.<br></br>
                 Below is a diagram which makes it clear how these different parts interact with each other :
-            
-                
             </p>
+            <img className=" m-6 rounded-3xl shadow-md shadow-black/30" src="../src/assets/architecture.png" alt="Getaway Diagram"></img>
         </div>
     )
 }

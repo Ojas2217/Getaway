@@ -13,7 +13,12 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-
+.md{
+  a{
+    color: #1e90ff;
+    text-decoration: underline;
+  }
+}
 a {
   font-weight: 500;
   color: #ffffff;

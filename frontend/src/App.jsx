@@ -13,14 +13,12 @@ function App() {
   const [authMap, setAuthMap] = useState(new Map());
   const [upToDate, setUpToDate] = useState(2); //0=not updated,1=loading,2=updated
 
-  console.log(import.meta.env.VITE_POLICY_ADDR)
   useEffect(() => {
     fetch(`http://${import.meta.env.VITE_POLICY_ADDR}/policies`)
       .then(res => res.json())
       .then(res => setPolicies(res))
-      .catch(e => console.log("Policy engine is down : " + e));
+      .catch(e => alert("Policy engine is down : " + e));
   }, []);
-  console.log(policies)
   useEffect(() => {
     if (policies.backend) setBackend(policies.backend)
     if (policies.path_prefix) setPrefix(policies.path_prefix)
@@ -64,8 +62,8 @@ function App() {
       method: "PUT",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(new_policies)
-    }).catch(e => console.log("policy engine is down"))
-    console.log(res)
+    }).catch(e => alert("policy engine is down"))
+    
     if (!res.ok) {
       const err = await res.json();
       alert("Error " + err.error);
@@ -100,10 +98,12 @@ function App() {
       updated.set(newToken, newUser);
     }
     setAuthMap(updated);
-    console.log(updated)
-    checkUpd(JSON.stringify(policies.authorization), JSON.stringify(updated))
+    checkUpd(JSON.stringify(policies.authorization), JSON.stringify(Object.fromEntries(Array.from(updated))))
   };
-  const checkUpd = (oldVal, newVal) => {
+  const checkUpd = (oldVal, newVal,isNum = false) => {
+    if(isNum){
+      newVal = Number(newVal)
+    }
     if (oldVal !== newVal) {
       setUpToDate(0)
     } else {
@@ -148,7 +148,7 @@ function App() {
       <div className="  flex flex-col items-start justify-between border-gray-500 border-b p-6 space-y-10">
         <h1>Cache</h1>
         <div className=' flex flex-row space-x-7 items-center'>
-          <input className=' bg-[#c2241241] border-none outline-0 rounded-md w-56 p-1.5' onChange={e => { if (/^[0-9]*$/.test(e.target.value)) checkUpd(policies.cache_duration, e.target.value); setCachedur(Number(e.target.value)) }} type="text" value={cachedur} placeholder='cache duration (seconds)'></input>
+          <input className=' bg-[#c2241241] border-none outline-0 rounded-md w-56 p-1.5' onChange={e => { if (/^[0-9]*$/.test(e.target.value)) checkUpd(policies.cache_duration, e.target.value,true); setCachedur(Number(e.target.value)) }} type="text" value={cachedur} placeholder='cache duration (seconds)'></input>
           <h2>Cache duration in seconds. Responses will be cached for this duration. Set to 0 to disable caching (default)</h2>
         </div>
       </div>
@@ -156,15 +156,15 @@ function App() {
       <div className="  flex flex-col items-start justify-between  p-6 space-y-10">
         <h1>Timeout & Rate Limit</h1>
         <div className=' flex flex-row space-x-7 items-center'>
-          <input className=' bg-[#c2241241] border-none outline-0  rounded-md w-56 p-1.5' onChange={e => { if (/^[0-9]*$/.test(e.target.value)) checkUpd(policies.request_timeout, e.target.value); setReqTimeout(Number(e.target.value)) }} type="text" value={reqTimeout} placeholder='timeout duration (seconds)'></input>
+          <input className=' bg-[#c2241241] border-none outline-0  rounded-md w-56 p-1.5' onChange={e => { if (/^[0-9]*$/.test(e.target.value)) checkUpd(policies.request_timeout, e.target.value,true); setReqTimeout(Number(e.target.value)) }} type="text" value={reqTimeout} placeholder='timeout duration (seconds)'></input>
           <h2>Request timeout duration in seconds. Requests taking longer will be aborted. Set to 0 to disable (default).</h2>
         </div>
         <div className=' flex flex-row space-x-7 items-center'>
-          <input className=' bg-[#c2241241] border-none outline-0 rounded-md w-56 p-1.5' onChange={e => { if (/^[0-9]*$/.test(e.target.value)) checkUpd(policies.rate_limit.rate_limit_requests, e.target.value); setRateRequests(Number(e.target.value)) }} type="text" value={rateRequests} placeholder='rate limit after X requests'></input>
+          <input className=' bg-[#c2241241] border-none outline-0 rounded-md w-56 p-1.5' onChange={e => { if (/^[0-9]*$/.test(e.target.value)) checkUpd(policies.rate_limit.rate_limit_requests, e.target.value,true); setRateRequests(Number(e.target.value)) }} type="text" value={rateRequests} placeholder='rate limit after X requests'></input>
           <h2>Rate Limit — the maximum number of requests a user can make within the specified time window.</h2>
         </div>
         <div className=' flex flex-row space-x-7 items-center'>
-          <input className=' bg-[#c2241241] border-none outline-0  rounded-md w-56 p-1.5' onChange={e => { if (/^[0-9]*$/.test(e.target.value)) checkUpd(policies.rate_limit.rate_limit_window, e.target.value); setRateWindow(Number(e.target.value)) }} type="text " value={rateWindow} placeholder='rate limit window'></input>
+          <input className=' bg-[#c2241241] border-none outline-0  rounded-md w-56 p-1.5' onChange={e => { if (/^[0-9]*$/.test(e.target.value)) checkUpd(policies.rate_limit.rate_limit_window, e.target.value,true); setRateWindow(Number(e.target.value)) }} type="text " value={rateWindow} placeholder='rate limit window'></input>
           <h2>Rate Limit Window — the duration of the rate limit window, in seconds.</h2>
         </div>
       </div>
