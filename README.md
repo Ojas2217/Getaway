@@ -35,6 +35,11 @@ getaway/
 - **Policy Engine** – Enforces routing rules and policies  
 - **Dashboard** – React frontend for configuring and monitoring the gateway
 
+
+Below is a diagram visualizing the architecture of this application  
+
+<img width="782" height="507" alt="Screenshot 2025-10-29 122555" src="https://github.com/user-attachments/assets/f2a3252c-3877-44f0-8018-706963ca9f93" />
+
 ---
 
 ## Installation
