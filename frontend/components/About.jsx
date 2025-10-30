@@ -1,6 +1,6 @@
 export default function About() {
     return (
-        <div className=" text-[#693f39]">
+        <div className=" text-[#693f39] min-h-screen">
             <h1 className=" p-6 pb-2  border-gray-500">What is an API Gateway?</h1>
             <p className=" p-6 pt-2 border-b text-3xl/loose">
                 An API Gateway acts as a reverse proxy between the client and backend services <br></br>
@@ -19,8 +19,9 @@ export default function About() {
                 3. The Dashboard, which is where you are now! Here you can integrate the gateway with your project<br></br> 
                 &emsp; to view and edit existing policies.<br></br>
                 Below is a diagram which makes it clear how these different parts interact with each other :
+                <img className="  rounded-3xl shadow-md shadow-black/30  md:scale-100" src="../src/assets/architecture.png" alt="Getaway Diagram"></img>
             </p>
-            <img className=" m-6 rounded-3xl shadow-md shadow-black/30" src="../src/assets/architecture.png" alt="Getaway Diagram"></img>
+            
         </div>
     )
 }

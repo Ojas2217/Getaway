@@ -17,7 +17,7 @@ export default function Logs() {
     }, []);
     console.log(logs)
     return (
-        <div className="">
+        <div className="min-h-screen">
             <h1 className=" text-3xl p-6 text-[#693f39]">Logs</h1>
             <div className=' bg-[url(./assets/img2.jpg)] bg-cover rounded-3xl shadow-md shadow-black/30 m-4  '>
                 <div className=" overflow-y-auto rounded-3xl w-auto h-[600px] p-8 pt-1 filter backdrop-blur text-white flex flex-col items-start justify-start">

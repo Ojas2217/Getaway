@@ -9,7 +9,7 @@ import Docs from '../components/Docs.jsx'
 import { BrowserRouter, Routes, Route } from 'react-router'
 import About from '../components/About.jsx'
 createRoot(document.getElementById('root')).render(
-  <>
+  <div className="min-h-screen flex flex-col bg-white">
     <Header />
       <BrowserRouter>
         <Routes>
@@ -21,5 +21,5 @@ createRoot(document.getElementById('root')).render(
         </Routes>
       </BrowserRouter>,
     <Footer />
-  </>
+  </div>
 )

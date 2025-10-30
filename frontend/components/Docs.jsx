@@ -2,9 +2,6 @@ import Markdown from 'react-markdown';
 
 export default function Docs() {
   const mdText = `
-# Documentation
-
-## About
 **Getaway** is a lightweight API gateway built with **Rust**, powered by **Tokio** and **Hyper**. It sits between your client and server, handling:
 
 - Routing requests  
@@ -79,7 +76,7 @@ From the dashboard, you can:
 `;
 
   return (
-    <div className="md p-6 text-[#693f39] space-y-6 text-2xl a ">
+    <div className="md p-6 text-[#693f39] space-y-6 text-2xl min-h-screen ">
       <Markdown>{mdText}</Markdown>
     </div>
   );
